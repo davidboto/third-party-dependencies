@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/davidboto/third-party-dependencies/issues"
   },
-  "homepage": "https://github.com/davidboto/third-party-dependencies#readme"
+  "homepage": "https://github.com/davidboto/third-party-dependencies#readme",
+  "dependencies": {
+    "commander": "^5.0.0"
+  }
 }
