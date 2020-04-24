@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/davidboto/third-party-dependencies#readme",
   "dependencies": {
+    "chalk": "^4.0.0",
     "commander": "^5.0.0"
   }
 }

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { program } = require('commander');
+const chalk = require('chalk');
 
 program.on('--help', () => {
   console.log('');
@@ -8,60 +9,75 @@ program.on('--help', () => {
 });
 
 program
-  .requiredOption('-s, --node-module <path>', 'defines the path to the node_module folder')
-  .option('-d, --destination <path>', 'defines the file to output the result')
+  .requiredOption('-s, --path-package <path>', '')
+  .option('-d, --output <output>', '')
 
 program.parse(process.argv);
 
-let packageList = [];
+let result = [];
 
 try {
 
-  const pathModules = program.nodeModule;
-  const modules = fs.readdirSync(pathModules);
+  let packagePath = program.pathPackage;
+  let packageJson = "";
 
-  modules.forEach((folder) => {
+  // Check if exists and opens the file
+  if (fs.existsSync(packagePath + "/package.json")) {
+    content = fs.readFileSync(packagePath + "/package.json", "utf8")
+  }
 
-    let license;
-    let packageContent;
-    let filteredPackage;
+  if (content !== undefined) {
+    content = JSON.parse(content);
+    Object.keys(content.dependencies).forEach(dependence => {
 
-    if (fs.lstatSync(pathModules + folder).isDirectory()) {
+      // Checks and open the dependencie folder in node_module.
+      if (fs.lstatSync(packagePath + "node_modules/" + dependence).isDirectory()) {
 
-      if (fs.existsSync(pathModules + folder + "/LICENSE")) {
-        license = fs.readFileSync(pathModules + folder + "/LICENSE", "utf8")
-      }
+        let license;
 
-      if (fs.existsSync(pathModules + folder + "/package.json")) {
-        packageContent = fs.readFileSync(pathModules + folder + "/package.json", "utf8")
-      }
+        // Check if the files LICENSE exists and stores it.
+        if (fs.existsSync(packagePath + "node_modules/" + dependence + "/" + "LICENSE")) {
+          license = fs.readFileSync(packagePath + "node_modules/" + dependence + "/LICENSE", "utf8")
+        } else {
+          // License file not found
+        }
 
-      if (packageContent !== undefined) {
-        packageContent = JSON.parse(packageContent)
-        filteredPackage = {
-          "name": packageContent.name,
-          "version": packageContent.version,
-          "description": packageContent.description,
-          "author": packageContent.author,
-        };
+        // Check if the files package.json exists and stores it.
+        if (fs.existsSync(packagePath + "node_modules/" + dependence + "/" + "package.json")) {
+          packageContent = fs.readFileSync(packagePath + "node_modules/" + dependence + "/package.json", "utf8")
+
+          packageContent = JSON.parse(packageContent);
+
+          packageJson = {
+            "name": packageContent.name,
+            "license": packageContent.license !== undefined ? packageContent.license : ""
+          };
+
+          result.push({ packageJson, license });
+
+        } else {
+          // package.json not found
+        }
+
+
       } else {
-
-        filteredPackage = {}
+        // Node folder not found
       }
 
-      packageList.push({ folder, license, filteredPackage });
-
-    }
-
-  });
+    });
+  } else {
+    // arquivo package.json não foi encontrado
+  }
 
 } catch (err) {
   console.log(err);
 }
 
-let resultFile = program.destination || "depencencies.json"
+let output = program.output || "output.json"
 
-fs.writeFile(resultFile, JSON.stringify(packageList), "utf8", data => {
-  console.log("ok")
-});
+let fd = fs.openSync("./" + output, "w+");
+let resultOutput = fs.writeSync(fd, JSON.stringify(result, null, 2), 0, "utf8");
+
+console.log(chalk.green('Completed!'));
+console.log(chalk.green('File size:', resultOutput));;
 
