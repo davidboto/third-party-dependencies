@@ -57,7 +57,15 @@ const ignoreDependencies = (dependenceList, ignore) => {
   return result;
 }
 
+const containsLicense = (dependence) => {
+  if (dependence.package.license === "" && dependence.license === "") {
+    return false;
+  }
+  return true;
+}
+
 let result = [];
+let resultNoLicense = [];
 
 try {
   let dependencePath = packagePath + "/package.json";
@@ -74,7 +82,13 @@ try {
     let packagejsonPath = packagePath + "node_modules/" + name + "/" + "package.json"
     let package = packageExtractor(packagejsonPath);
 
+    let dependence = { package, license }
+
+    if(!containsLicense(dependence)){
+      resultNoLicense.push( dependence.package.name )  
+    };
     result.push({ package, license })
+
   });
 
 } catch (err) {
@@ -86,5 +100,6 @@ let fd = fs.openSync("./" + filename, "w+");
 let parsedResult = JSON.stringify(result, null, 2);
 let resultOutput = fs.writeSync(fd, parsedResult, 0, "utf8");
 
+resultNoLicense.length > 0 ? console.log(chalk.red("No dependence NOT FOUND for the given package(s):", resultNoLicense)) : '';
 console.log(chalk.green("Number of dependencies:", Object.keys(result).length));
 console.log(chalk.green("Output in: " + filename + " (" + + resultOutput + " bytes" + ")"));
