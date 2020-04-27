@@ -9,20 +9,27 @@ program.on('--help', () => {
 });
 
 program
-  .requiredOption('-s, --path-package <path>', 'path to package.json')
-  .option('-o, --output <output>', 'file name to output the result')
+  .requiredOption('-p, --package-path <path>', 'path to package.json')
+  .option('-o, --output <output>', 'filename to output the result')
+  .option('-d, --include-dev-dependencies', 'include devDependencies')
+  .option('-i, --ignore <packages>', 'package names separated by commas (e.g., packageA,packageB,packageC)')
 
 program.parse(process.argv);
 
-let result = [];
+const { output, packagePath, includeDevDependencies, ignore } = program;
 
-const dependenceExtractor = (content) => {
+const dependenceExtractor = (path) => {
   let dependenceList = [];
-  Object.keys(content.dependencies).forEach(dependenceName => dependenceList.push(dependenceName));
+  if (fs.existsSync(path)) {
+    content = fs.readFileSync(path, "utf8")
+    content = JSON.parse(content);
+    Object.keys(content.dependencies).forEach(dependenceName => dependenceList.push(dependenceName));
+    if (includeDevDependencies)
+      Object.keys(content.devDependencies).forEach(dependenceName => dependenceList.push(dependenceName));
+  }
   return dependenceList;
 }
 
-// Check if the files LICENSE exists and stores it.
 const licenseExtractor = (path) => {
   let license = "";
   if (fs.existsSync(path)) {
@@ -31,8 +38,7 @@ const licenseExtractor = (path) => {
   return license;
 }
 
-// Checks if the files package.json exists and stores it;
-const packageJsonExtractor = (path) => {
+const packageExtractor = (path) => {
   let packageJson;
   if (fs.existsSync(path)) {
     packageContent = fs.readFileSync(path, "utf8")
@@ -44,37 +50,41 @@ const packageJsonExtractor = (path) => {
   }
   return packageJson;
 }
+
+const ignoreDependencies = (dependenceList, ignore) => {
+  let dependencesToIgnore = ignore.split(",");
+  let result = dependenceList.filter(d => !dependencesToIgnore.includes(d))
+  return result;
+}
+
+let result = [];
+
 try {
+  let dependencePath = packagePath + "/package.json";
+  let dependenceList = dependenceExtractor(dependencePath);
 
-  let packagePath = program.pathPackage;
-
-  // Check if package.json and read it content.
-  if (fs.existsSync(packagePath + "/package.json")) {
-    content = fs.readFileSync(packagePath + "/package.json", "utf8")
-  } else {
-    console.log(chalk.red('package.json not found.'));
-    return;
+  if (ignore) {
+    dependenceList = ignoreDependencies(dependenceList, ignore);
   }
-
-  let dependenceList = dependenceExtractor(JSON.parse(content));
 
   dependenceList.forEach((name) => {
     let licensePath = packagePath + "node_modules/" + name + "/" + "LICENSE"
-    let packagejsonPath = packagePath + "node_modules/" + name + "/" + "package.json"
     let license = licenseExtractor(licensePath);
-    let packageJson = packageJsonExtractor(packagejsonPath);
-    result.push({ packageJson, license })
+
+    let packagejsonPath = packagePath + "node_modules/" + name + "/" + "package.json"
+    let package = packageExtractor(packagejsonPath);
+
+    result.push({ package, license })
   });
 
 } catch (err) {
   console.log(err);
 }
 
-let output = program.output || "output.json"
-let fd = fs.openSync("./" + output, "w+");
+let filename = output || "output.json";
+let fd = fs.openSync("./" + filename, "w+");
 let parsedResult = JSON.stringify(result, null, 2);
-
 let resultOutput = fs.writeSync(fd, parsedResult, 0, "utf8");
 
-console.log(chalk.green('Completed!'));
-console.log(chalk.green('File size:', resultOutput));
+console.log(chalk.green("Number of dependencies:", Object.keys(result).length));
+console.log(chalk.green("Output in: " + filename + " (" + + resultOutput + " bytes" + ")"));
