@@ -100,6 +100,6 @@ let fd = fs.openSync("./" + filename, "w+");
 let parsedResult = JSON.stringify(result, null, 2);
 let resultOutput = fs.writeSync(fd, parsedResult, 0, "utf8");
 
-resultNoLicense.length > 0 ? console.log(chalk.red("No dependence NOT FOUND for the given package(s):", resultNoLicense)) : '';
+resultNoLicense.length > 0 ? console.log(chalk.red("No license NOT FOUND for the given package(s):", resultNoLicense)) : '';
 console.log(chalk.green("Number of dependencies:", Object.keys(result).length));
 console.log(chalk.green("Output in: " + filename + " (" + + resultOutput + " bytes" + ")"));
