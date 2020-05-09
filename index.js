@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 const fs = require('fs');
 const { program } = require('commander');
 const chalk = require('chalk');
@@ -13,42 +15,47 @@ program
   .option('-o, --output <output>', 'filename to output the result')
   .option('-d, --include-dev-dependencies', 'include devDependencies')
   .option('-i, --ignore <packages>', 'package names separated by commas (e.g., packageA,packageB,packageC)')
+  // .option('-f, --fields <fields>, fields from package.json that should be extracted separated by commas (e.g., name,license,description)');
 
 program.parse(process.argv);
-
-const { output, packagePath, includeDevDependencies, ignore } = program;
+const { output, packagePath, includeDevDependencies, ignore, fields } = program;
+const fileEnconding = "utf8"
 
 const dependenceExtractor = (path) => {
-  let dependenceList = [];
+  let result = [];
   if (fs.existsSync(path)) {
-    content = fs.readFileSync(path, "utf8")
+    content = fs.readFileSync(path, fileEnconding)
     content = JSON.parse(content);
-    Object.keys(content.dependencies).forEach(dependenceName => dependenceList.push(dependenceName));
+
+    Object.keys(content.dependencies).forEach(dependenceName => result.push(dependenceName));
     if (includeDevDependencies)
-      Object.keys(content.devDependencies).forEach(dependenceName => dependenceList.push(dependenceName));
+      Object.keys(content.devDependencies).forEach(dependenceName => result.push(dependenceName));
+
   }
-  return dependenceList;
+  return result;
 }
 
 const licenseExtractor = (path) => {
   let license = "";
   if (fs.existsSync(path)) {
-    license = fs.readFileSync(path, "utf8")
+    license = fs.readFileSync(path, fileEnconding)
   }
   return license;
 }
 
 const packageExtractor = (path) => {
-  let packageJson;
+  let result;
   if (fs.existsSync(path)) {
-    packageContent = fs.readFileSync(path, "utf8")
-    packageContent = JSON.parse(packageContent);
-    packageJson = {
-      "name": packageContent.name,
-      "license": packageContent.license !== undefined ? packageContent.license : ""
+    content = fs.readFileSync(path, fileEnconding)
+    content = JSON.parse(content);
+
+    result = {
+      "name": content.name,
+      "license": content.license !== undefined ? content.license : ""
     };
+
   }
-  return packageJson;
+  return result;
 }
 
 const ignoreDependencies = (dependenceList, ignore) => {
@@ -98,8 +105,11 @@ try {
 let filename = output || "output.json";
 let fd = fs.openSync("./" + filename, "w+");
 let parsedResult = JSON.stringify(result, null, 2);
-let resultOutput = fs.writeSync(fd, parsedResult, 0, "utf8");
+let resultOutput = fs.writeSync(fd, parsedResult, 0, fileEnconding);
 
-resultNoLicense.length > 0 ? console.log(chalk.red("No license NOT FOUND for the given package(s):", resultNoLicense)) : '';
+if(resultNoLicense.length > 0) {
+  console.log(chalk.red("No license NOT FOUND for the given package(s):", resultNoLicense));
+}
+
 console.log(chalk.green("Number of dependencies:", Object.keys(result).length));
 console.log(chalk.green("Output in: " + filename + " (" + + resultOutput + " bytes" + ")"));
