@@ -108,7 +108,7 @@ let parsedResult = JSON.stringify(result, null, 2);
 let resultOutput = fs.writeSync(fd, parsedResult, 0, fileEnconding);
 
 if(resultNoLicense.length > 0) {
-  console.log(chalk.red("No license NOT FOUND for the given package(s):", resultNoLicense));
+  console.log(chalk.red("No license FOUND for the given package(s):", resultNoLicense));
 }
 
 console.log(chalk.green("Number of dependencies:", Object.keys(result).length));
