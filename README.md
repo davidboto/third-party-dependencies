@@ -1,6 +1,6 @@
 # Third-Party Dependencies
 
-Search and output the licenses of all dependencies listed in package.json. 
+Search and outputs the licenses of all dependencies listed in package.json. 
 
 **Example of use:**
 
